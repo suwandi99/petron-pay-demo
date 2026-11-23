@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Station POS – Adyen demo</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body class="pos">
+  <div class="pos-wrap">
+    <div class="pos-head">
+      <div>
+        <h1>Station POS <span class="muted">· merchant view</span></h1>
+        <div class="muted">Capture, partially capture, over-capture or release the fuel holds created in the customer app.</div>
+      </div>
+      <a class="btn ghost small" href="/" target="_blank" style="text-decoration:none">Open customer app</a>
+    </div>
+    <div id="notice"></div>
+    <div class="pos-grid">
+      <aside><div class="card"><h3>Pump holds</h3><div id="holds"></div></div></aside>
+      <section id="detail"></section>
+    </div>
+  </div>
+  <script src="/js/shared.js"></script>
+  <script src="/js/pos.js"></script>
+</body>
+</html>
