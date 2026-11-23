@@ -416,6 +416,16 @@
     return true;
   }
 
+  // Optional logo: drop an official logo file into /public/img/ named petron-logo.svg or petron-logo.png.
+  (function loadLogo(i = 0) {
+    const files = ['/img/petron-logo.svg', '/img/petron-logo.png'];
+    if (i >= files.length) return;
+    const img = $('#logo');
+    img.onload = () => (img.hidden = false);
+    img.onerror = () => loadLogo(i + 1);
+    img.src = files[i];
+  })();
+
   $$('#tabs button').forEach((b) => (b.onclick = () => go(b.dataset.tab)));
   window.addEventListener('storage', () => { if (['home', 'activity'].includes(view.name)) paint(); });
   window.addEventListener('focus', () => { if (['home', 'activity'].includes(view.name)) paint(); });

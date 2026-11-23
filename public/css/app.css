@@ -38,7 +38,7 @@ button { font: inherit; cursor: pointer; }
 .appbar { background: var(--blue); color: #fff; padding: 6px 16px 14px; display: flex; align-items: center; gap: 10px; }
 .appbar h1 { font-size: 18px; margin: 0; flex: 1; font-weight: 650; }
 .appbar .back { background: rgba(255,255,255,.16); border: 0; color: #fff; width: 32px; height: 32px; border-radius: 50%; font-size: 18px; }
-.appbar .brand { display: flex; align-items: center; gap: 8px; }
+.appbar #logo { height: 28px; max-width: 96px; object-fit: contain; background: #fff; border-radius: 7px; padding: 3px 7px; }
 .logo-dot { width: 26px; height: 26px; border-radius: 50%; background: conic-gradient(var(--red) 0 33%, var(--yellow) 0 66%, #fff 0); border: 2px solid #fff; }
 #screen { flex: 1; overflow-y: auto; padding: 16px; }
 .tabs { display: flex; background: #fff; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }

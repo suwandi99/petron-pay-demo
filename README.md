@@ -67,12 +67,35 @@ Then go to **Deployments** → latest deployment → **⋯** → **Retry deploym
 
 Test card: `4111 1111 1111 1111`, expiry `03/30`, CVC `737`.
 
-## 5. Suggested demo script
+## 5. Add the Petron logo
 
-1. **Top up**: wallet shows RM 15. Tap *Pay at pump → RM 100*, the wallet can't cover it → *Top up* → pay with FPX / e-wallet (or DuitNow QR once enabled). Wallet updates.
-2. **Add card**: *Cards → Add a card* → save the test card (zero-value auth, token stored).
-3. **Pay at pump with card**: choose the saved card → RM 100 **pre-authorisation**. Show the hold in *Activity*.
-4. **Station POS** (`/pos.html`): the customer pumped RM 62 → **partial capture**. Repeat with another hold: pumped RM 120 → **over-capture** (adjust + capture). Release a third hold: pump not used.
+Save the official logo file (from Petron's brand assets) as `public/img/petron-logo.svg` or `public/img/petron-logo.png`. On GitHub: open `public` → `img` → **Add file** → **Upload files** → **Commit changes**. It appears in the app's top bar after the automatic redeploy (about a minute). Without a file the app just shows the plain "Petron Pay" title.
+
+## 6. How to operate the demo
+
+**Before the session**
+- Open `https://<project>.pages.dev` on your phone (or in a desktop browser) and `https://<project>.pages.dev/pos.html` in a second browser window. For both to share the same wallet and holds they must be in the **same browser on the same device**. Easiest: one laptop, two windows side by side.
+- Activity tab → **Reset demo data** gives you a clean start (wallet back to RM 15, no holds, new shopper).
+- If you set `POS_PIN`, the POS asks for it the first time you press a button.
+
+**Run of show (about 8 minutes)**
+1. **Top up (non-card).** Home shows a RM 15 wallet. Tap *Pay at pump*, keep RM 100, *Continue*. The wallet is too low, so tap the *Top up* button → choose an amount → *Continue to payment* → pay with FPX or an e-wallet (DuitNow QR once enabled). The wallet balance updates.
+2. **Add a card.** *Cards* tab → *Add a card* → test card `4111 1111 1111 1111`, `03/30`, `737`, any name → *Save card*. It runs a zero-value authorisation and stores a token with Adyen.
+3. **Pay at pump with a card (pre-authorisation).** *Pump* tab → station, pump, fuel, RM 100 → *Continue* → the saved card appears in the Drop-in (enter CVC 737) → pay. The app says the pump is ready and shows a RM 100 **hold**.
+4. **Station POS** (merchant view). Open `/pos.html`, select the hold, then:
+   - **Partial capture:** leave the default (about 62%) or type the final amount, e.g. RM 62 → *Partial capture*. The unused RM 38 is released.
+   - **Over-capture:** repeat steps 3–4 with a new hold, type RM 120 → the button reads *Over-capture* (adjusts the hold up by RM 20, then captures).
+   - **Release:** a third hold → *Release hold (pump not used)*.
+   Switch back to the app's Activity tab: the hold shows as *Charged* or *Hold released*.
+5. Point out the **Adyen API calls** panel on the POS: `/payments` (PreAuth), `/amountUpdates`, `/captures`, `/cancels`.
+
+**If something goes wrong**
+- *"Adyen is not configured yet"*: a variable from step 3 is missing, or you didn't retry the deployment after adding it.
+- *Card form doesn't load / blank Drop-in*: the `pages.dev` URL isn't in the API credential's **Allowed origins**, or the client key is wrong.
+- *Top up shows no methods*: none of the non-card methods are enabled on the merchant account yet (or `TOPUP_METHODS` excludes them).
+- *Capture error from Adyen*: the POS shows Adyen's message in the API calls panel. Typical causes: the payment isn't a manual-capture pre-authorisation, the amount exceeds what is allowed, or a second partial capture (needs Adyen Support to enable).
+- *Saved card doesn't appear straight away*: wait a few seconds and reopen the Cards tab.
+- The wallet and holds live only in that browser. Clearing site data or using another browser starts fresh.
 
 ## Local preview (optional)
 
