@@ -63,9 +63,45 @@ Then go to **Deployments** → latest deployment → **⋯** → **Retry deploym
 - **Payment methods** (Settings → Payment methods): cards, **FPX**, **Touch 'n Go / GrabPay / Boost** are on your account already. **DuitNow QR is not** – ask your Adyen contact / Support to enable it; once enabled it appears in Top up automatically (type `duitnow`).
 - **Multiple partial captures** are disabled by default and need Adyen Support to switch on. A single partial capture works out of the box.
 - **Over-capture**: Adyen's public docs describe capturing up to the authorised amount. The demo does it the documented way for fuel: *adjust the pre-authorisation upwards (`/amountUpdates`), then capture the new total*. If you want true scheme over-capture, confirm availability for your merchant account and card schemes with Adyen first.
-- This demo does **not** receive webhooks. Capture/adjust calls return "received"; the real outcome arrives as CAPTURE / AUTHORISATION_ADJUSTMENT webhooks. A production build must handle those.
+- Capture/adjust calls return "received"; the real outcome arrives as CAPTURE / AUTHORISATION_ADJUSTMENT webhooks. See section 4b to receive and view them. The wallet and holds in the app do not change based on webhooks. A production build must handle them.
 
 Test card: `4111 1111 1111 1111`, expiry `03/30`, CVC `737`.
+
+## 4b. Webhooks (receiver + back office)
+
+The demo can receive Adyen webhooks and list them at **`/webhooks.html`** (a link is also on the Station POS page). Events are stored in a Cloudflare **KV namespace** (think of it as a small key/value database) and auto-delete after 7 days.
+
+**A. Create the KV namespace and connect it**
+1. Cloudflare dashboard → **Workers & Pages** → **KV** → **Create a namespace** → name it `petron-demo-webhooks` → Add.
+2. Open your Pages project → **Settings** → **Bindings** (older dashboards: *Functions* → *KV namespace bindings*) → **Add** → **KV namespace**.
+3. **Variable name** must be exactly `WEBHOOKS_KV`; pick the namespace you just created. Add it for **Production** (and Preview if you use it). Save.
+
+**B. Add these variables** (Settings → Variables and secrets, Production):
+
+| Name | Type | Value |
+| --- | --- | --- |
+| `WEBHOOK_VIEW_PASSWORD` | Secret | Password to open `/webhooks.html`. **Required**: without it the back office stays locked (events contain payment data). |
+| `WEBHOOK_USER` | Text | Basic-auth username you will also type into Adyen (e.g. `adyen`) |
+| `WEBHOOK_PASSWORD` | Secret | Basic-auth password you will also type into Adyen |
+| `ADYEN_HMAC_KEY` | Secret | The HMAC key Adyen shows when you create the webhook (step C). Several keys can be comma separated. |
+| `WEBHOOK_TTL_DAYS` | Text (optional) | Days to keep events, 1 to 90. Default 7. |
+
+Then **retry the latest deployment** (bindings and variables only apply to new deployments).
+
+**C. Create the webhook in Adyen** (Customer Area → **Developers → Webhooks → Create new webhook**)
+1. Choose **Standard webhook** → **Add**.
+2. **URL**: `https://<your-project>.pages.dev/api/webhooks/adyen`. **Method**: **JSON**. **Encryption protocol**: TLSv1.2 or TLSv1.3.
+3. **Basic authentication**: the same username/password as `WEBHOOK_USER` / `WEBHOOK_PASSWORD`.
+4. **HMAC key**: generate a new key and copy it into `ADYEN_HMAC_KEY` in Cloudflare (then retry the deployment).
+5. **Events**: tick at least AUTHORISATION, CAPTURE, CAPTURE_FAILED, AUTHORISATION_ADJUSTMENT, CANCELLATION, REFUND. Pick your merchant account. Make sure the webhook is **Enabled** and click **Save configuration**.
+6. For saved-card events (token created / disabled) add a second webhook of the type **Recurring tokens life cycle events** with the same URL and the same basic-auth. Choose **use an existing key** for the HMAC key, so the one `ADYEN_HMAC_KEY` covers both.
+7. Click **Test configuration**, choose an event and send it. Open `/webhooks.html`: the test event should be listed with signature **Valid**.
+
+**How to read the back office**: each row is one event (event code, success or failed, PSP reference, merchant reference, amount, signature check). Click a row for the full JSON. The search box matches PSP and merchant references; "Clear all" empties the list. New events can take up to a minute to show up (KV is eventually consistent) and the page refreshes itself every few seconds.
+
+**Signature column**: *Valid* = signed by Adyen with your key. *INVALID* = the content does not match the signature (wrong key in Cloudflare, or tampered). *Not checked* = `ADYEN_HMAC_KEY` is not set. Invalid events are still stored (flagged) so you can debug the setup; your endpoint answers `200 [accepted]` so Adyen does not keep retrying.
+
+**Not in this demo**: the wallet and holds do not react to webhooks, and events are not de-duplicated (Adyen can deliver the same event twice; both are listed).
 
 ## 5. Add the Petron logo
 
@@ -107,7 +143,7 @@ npx wrangler pages dev public
 ## Project layout
 
 ```
-public/            static app (index.html = customer app, pos.html = Station POS)
-functions/api/     Pages Functions (server side, holds the API key)
+public/            static app (index.html = customer app, pos.html = Station POS, webhooks.html = webhook back office)
+functions/api/     Pages Functions (server side, holds the API key); functions/api/webhooks/ = webhook receiver + back office APIs
 functions/_lib/    shared server helpers
 ```

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Webhook back office – Adyen demo</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body class="pos">
+  <div class="pos-wrap">
+    <div class="pos-head">
+      <div>
+        <h1>Webhook back office <span class="muted">· Adyen events received</span></h1>
+        <div class="muted">Every event Adyen sends to your endpoint appears here, with its signature check.</div>
+      </div>
+      <div class="chips">
+        <a class="btn ghost small" href="/pos.html" style="text-decoration:none">Station POS</a>
+        <a class="btn ghost small" href="/" target="_blank" style="text-decoration:none">Customer app</a>
+      </div>
+    </div>
+
+    <div id="notice"></div>
+
+    <div class="card">
+      <h3>Endpoint to configure in Adyen</h3>
+      <div class="row" style="flex-wrap:wrap">
+        <code id="endpoint" style="word-break:break-all;font-weight:700"></code>
+        <button class="btn ghost small" id="copy">Copy URL</button>
+      </div>
+      <div class="muted" id="cfg" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="flex-wrap:wrap;gap:10px">
+        <input class="txt" id="q" placeholder="Search psp reference, merchant reference, event…" style="flex:1;min-width:220px" />
+        <select class="txt" id="codeFilter" style="width:auto"><option value="">All events</option></select>
+        <label class="muted" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="auto" checked /> Auto-refresh</label>
+        <button class="btn ghost small" id="refresh">Refresh</button>
+        <button class="btn ghost small" id="clear">Clear all</button>
+      </div>
+      <div class="muted" id="meta" style="margin:10px 0 6px"></div>
+      <div style="overflow-x:auto">
+        <table class="tbl" id="tbl">
+          <thead><tr><th>Received</th><th>Event</th><th>Result</th><th>PSP reference</th><th>Merchant / shopper ref</th><th>Amount</th><th>Signature</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <button class="btn ghost small" id="more" hidden style="margin-top:10px">Load older events</button>
+    </div>
+
+    <div class="card" id="detailCard" hidden>
+      <div class="row"><h3 style="margin:0" id="detailTitle">Event</h3><button class="btn ghost small" id="copyJson">Copy JSON</button></div>
+      <dl class="kv" id="detailKv" style="margin-top:12px"></dl>
+      <div class="log" id="detailJson"></div>
+    </div>
+  </div>
+  <script src="/js/shared.js"></script>
+  <script src="/js/webhooks.js"></script>
+</body>
+</html>

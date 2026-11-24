@@ -113,3 +113,11 @@ body.pos { background: #eef1f6; }
 .log .ep { color: #8bd0ff; font-weight: 700; }
 .log .good { color: #7ee2a8; }
 .log .bad { color: #ff9aa8; }
+
+/* ---------- webhook back office ---------- */
+.pill.bad { background: #fde7ea; color: #7a0019; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th { text-align: left; color: var(--muted); font-weight: 650; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tbl td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl tbody tr[data-k] { cursor: pointer; }
+.tbl tbody tr[data-k]:hover, .tbl tbody tr.on { background: #f3f7ff; }
