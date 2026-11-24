@@ -372,8 +372,22 @@
         const { cards, debug } = await D.api('/api/stored-cards?shopperReference=' + encodeURIComponent(D.get().shopperRef));
         renderDiag(cards.length, debug);
         box.innerHTML = cards.length
-          ? `<div class="card"><h3>Saved cards</h3>${cards.map((c) => `<div class="list-item"><div><div class="t">💳 ${esc(c.brand)} •••• ${esc(c.lastFour || '')}</div><div class="muted">${esc(c.holderName || '')} · expires ${esc(c.expiryMonth)}/${esc(c.expiryYear)}</div></div></div>`).join('')}<div class="muted" style="margin-top:8px">Tokens are stored by Adyen. Your app never sees the card number.</div></div>`
+          ? `<div class="card"><h3>Saved cards</h3>${cards.map((c) => `<div class="list-item"><div><div class="t">💳 ${esc(c.brand)} •••• ${esc(c.lastFour || '')}</div><div class="muted">${esc(c.holderName || '')} · expires ${esc(c.expiryMonth)}/${esc(c.expiryYear)}</div></div><button class="btn ghost small" data-del="${esc(c.id)}">Remove</button></div>`).join('')}<div class="muted" style="margin-top:8px">Tokens are stored by Adyen. Your app never sees the card number.</div></div>`
           : '<div class="card center"><div class="big-ic">💳</div><div class="t" style="font-weight:700">No saved cards yet</div><div class="muted">Add a card to pay at the pump with a pre-authorisation.</div>' + pendingNote() + '</div>';
+        $$('[data-del]', box).forEach((b) => (b.onclick = async () => {
+          if (!confirm('Remove this card from your account?')) return;
+          b.disabled = true;
+          b.textContent = 'Removing…';
+          try {
+            await D.api('/api/stored-cards?id=' + encodeURIComponent(b.dataset.del) + '&shopperReference=' + encodeURIComponent(D.get().shopperRef), undefined, 'DELETE');
+            toast('Card removed');
+            paint();
+          } catch (e) {
+            toast(e.message);
+            b.disabled = false;
+            b.textContent = 'Remove';
+          }
+        }));
       } catch (e) {
         box.innerHTML = banner(e.message, true);
       }

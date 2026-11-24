@@ -55,12 +55,12 @@ window.Demo = (() => {
   const esc = (v) =>
     String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  async function api(path, body) {
+  async function api(path, body, method) {
     const headers = { 'content-type': 'application/json' };
     const pin = sessionStorage.getItem('pos_pin');
     if (pin) headers['x-pos-pin'] = pin;
     const res = await fetch(path, {
-      method: body === undefined ? 'GET' : 'POST',
+      method: method || (body === undefined ? 'GET' : 'POST'),
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
     });
