@@ -58,6 +58,10 @@
     setTimeout(() => t.remove(), 4500);
   }
   const banner = (msg, err) => `<div class="banner ${err ? 'err' : ''}">${esc(msg)}</div>`;
+  // Remember the outcome of the last add-card attempt so the Cards screen can show it (toasts vanish).
+  const noteAddCard = (o) => {
+    try { localStorage.setItem('petron_last_addcard', JSON.stringify({ ...o, ts: Date.now() })); } catch { /* ignore */ }
+  };
 
   // ---- Adyen plumbing ---------------------------------------------------------------------------
   // Builds one AdyenCheckout instance (Advanced flow: we call /payments ourselves so we get the
@@ -85,9 +89,11 @@
           localStorage.setItem('petron_pending', JSON.stringify({ kind, amount, meta }));
           const res = await D.api('/api/payments', { data: state.data, kind, amount, shopperReference: D.get().shopperRef });
           if (res.pspReference) last.pspReference = res.pspReference;
+          if (kind === 'addcard') noteAddCard({ stage: '/payments', resultCode: res.resultCode, pspReference: res.pspReference, refusalReason: res.refusalReason, action: res.action?.type });
           if (!res.resultCode) return actions.reject();
           actions.resolve({ resultCode: res.resultCode, action: res.action, order: res.order, donationToken: res.donationToken });
         } catch (e) {
+          if (kind === 'addcard') noteAddCard({ stage: '/payments', error: e.data?.details?.message || e.data?.details?.errorCode || e.message });
           toast(e.message);
           actions.reject();
         }
@@ -105,7 +111,10 @@
       },
       onPaymentCompleted: (result) => complete({ kind, amount, meta, resultCode: result.resultCode, pspReference: last.pspReference }),
       onPaymentFailed: (result) => complete({ kind, amount, meta, resultCode: result?.resultCode || 'Refused', pspReference: last.pspReference }),
-      onError: (error) => toast(error?.message || 'Something went wrong with the payment'),
+      onError: (error) => {
+        if (kind === 'addcard') noteAddCard({ stage: 'browser (Adyen Web)', error: error?.message || String(error) });
+        toast(error?.message || 'Something went wrong with the payment');
+      },
     });
     return { checkout, methods };
   }
@@ -327,14 +336,32 @@
 
   screens.cards = {
     title: 'My cards', tab: 'cards',
-    html: () => `<div id="cardlist"><div class="spinner"></div></div><button class="btn red" id="add" style="margin-top:6px">Add a card</button>`,
+    html: () => `<div id="cardlist"><div class="spinner"></div></div>
+      <button class="btn red" id="add" style="margin-top:6px">Add a card</button>
+      <button class="btn ghost" id="refresh" style="margin-top:10px">Refresh list</button>
+      <div id="diag"></div>`,
     async after() {
       $('#add').onclick = () => go('addCard');
+      $('#refresh').onclick = () => paint();
+      const renderDiag = (count) => {
+        let last = null;
+        try { last = JSON.parse(localStorage.getItem('petron_last_addcard') || 'null'); } catch { /* ignore */ }
+        const lastTxt = last
+          ? [new Date(last.ts).toLocaleTimeString('en-MY'), last.stage, last.resultCode, last.error, last.refusalReason, last.action && 'action: ' + last.action, last.pspReference && 'psp ' + last.pspReference].filter(Boolean).join(' · ')
+          : 'none yet on this browser';
+        $('#diag').innerHTML = `<div class="card" style="margin-top:14px"><h3>Troubleshooting</h3>
+          <dl class="kv"><dt>Shopper reference</dt><dd>${esc(D.get().shopperRef)}</dd>
+          <dt>Cards found at Adyen</dt><dd>${count ?? 'could not load'}</dd>
+          <dt>Last add-card attempt</dt><dd>${esc(lastTxt)}</dd></dl>
+          <div class="muted">Search the shopper reference or psp reference in Adyen Customer Area → Transactions → Payments.</div></div>`;
+      };
+      renderDiag(null);
       const box = $('#cardlist');
       try {
         const cfg = await D.config();
         if (!cfg.ready) throw new Error('Adyen is not configured yet. Missing: ' + cfg.missing.join(', '));
         const { cards } = await D.api('/api/stored-cards?shopperReference=' + encodeURIComponent(D.get().shopperRef));
+        renderDiag(cards.length);
         box.innerHTML = cards.length
           ? `<div class="card"><h3>Saved cards</h3>${cards.map((c) => `<div class="list-item"><div><div class="t">💳 ${esc(c.brand)} •••• ${esc(c.lastFour || '')}</div><div class="muted">${esc(c.holderName || '')} · expires ${esc(c.expiryMonth)}/${esc(c.expiryYear)}</div></div></div>`).join('')}<div class="muted" style="margin-top:8px">Tokens are stored by Adyen. Your app never sees the card number.</div></div>`
           : '<div class="card center"><div class="big-ic">💳</div><div class="t" style="font-weight:700">No saved cards yet</div><div class="muted">Add a card to pay at the pump with a pre-authorisation.</div></div>';
