@@ -128,7 +128,7 @@
       if (nothing) {
         el.innerHTML = banner(
           opts.kind === 'topup'
-            ? 'No top-up payment methods are enabled on this Adyen test account yet (DuitNow QR, FPX or an e-wallet). Enable one in the Customer Area, or adjust TOPUP_METHODS.'
+            ? 'No top-up payment methods are enabled on this Adyen test account yet (card, DuitNow QR, FPX or an e-wallet). Enable one in the Customer Area, or adjust TOPUP_METHODS.'
             : 'No card payment method is enabled on this Adyen test account.',
           true
         );
@@ -139,7 +139,7 @@
       const dropin = new Dropin(checkout, {
         showStoredPaymentMethods: true,
         paymentMethodsConfiguration: {
-          card: { hasHolderName: true, holderNameRequired: false, enableStoreDetails: opts.kind === 'preauth' },
+          card: { hasHolderName: true, holderNameRequired: false, enableStoreDetails: opts.kind === 'preauth' || opts.kind === 'topup' },
         },
       });
       dropin.mount(el);
@@ -307,7 +307,7 @@
           <div class="card"><div class="row"><div class="muted">Top-up amount</div><div style="font-weight:750;font-size:20px">${rm(draft.topup)}</div></div>
             <button class="btn ghost small" id="change" style="margin-top:10px">Change amount</button></div>
           <div class="card"><h3>Choose how to pay</h3><div class="pay-box" id="dropin"></div>
-          <div class="hint">Non-card methods only: pay with DuitNow QR, FPX online banking or an e-wallet.</div></div>`;
+          <div class="hint">Pay with a card, DuitNow QR, FPX online banking or an e-wallet. Test card: 4111 1111 1111 1111 · 03/30 · CVC 737</div></div>`;
       }
       return `
         <div class="card"><h3>How much would you like to add?</h3>

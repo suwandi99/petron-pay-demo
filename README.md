@@ -6,7 +6,7 @@ server layer in **Cloudflare Pages Functions** (so your Adyen API key never reac
 | Screen | What it shows | Adyen pieces |
 | --- | --- | --- |
 | **Pay at pump** | Pick station, pump, fuel, amount. Pay by card with a **pre-authorisation** (hold). Or pay from wallet. | Drop-in (cards + saved cards), `/payments` with `authorisationType=PreAuth`, manual capture |
-| **Top up** | Add wallet balance with a **non-card** method. | Drop-in filtered to DuitNow QR / FPX / Touch 'n Go / GrabPay / Boost |
+| **Top up** | Add wallet balance with a card (including saved cards) or a non-card method. | Drop-in filtered to cards + DuitNow QR / FPX / Touch 'n Go / GrabPay / Boost. Set `TOPUP_CARDS=off` to hide cards |
 | **Cards → Add a card** | Dedicated add-card screen. Zero-value authorisation stores a token. | Card Component, `storePaymentMethod`, `/storedPaymentMethods` |
 | **Station POS** (`/pos.html`) | Merchant view: full capture, **partial capture**, **over-capture**, adjust, release. Shows each API call. | `/captures`, `/amountUpdates`, `/cancels` |
 

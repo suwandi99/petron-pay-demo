@@ -49,7 +49,10 @@ export async function onRequestPost({ request, env }) {
 
   if (isCard) {
     body.authenticationData = { threeDSRequestData: { nativeThreeDS: 'preferred' } };
-    if (shopperRef) body.recurringProcessingModel = 'CardOnFile';
+    // Only mark the payment as card-on-file when a token is used or created; a one-off card payment is not.
+    if (shopperRef && (forwarded.paymentMethod?.storedPaymentMethodId || forwarded.storePaymentMethod)) {
+      body.recurringProcessingModel = 'CardOnFile';
+    }
   }
   if (kind === 'preauth') {
     // Pre-authorisation: reserve funds, capture later (partial / adjusted) from the Station POS.

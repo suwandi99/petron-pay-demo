@@ -39,8 +39,11 @@ export async function onRequestPost({ request, env }) {
       .split(',')
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean);
+    // Cards are always offered for top-up too (set TOPUP_CARDS=off to hide them).
+    if (String(env.TOPUP_CARDS || '').toLowerCase() !== 'off' && !allowed.includes('scheme')) allowed.push('scheme');
     paymentMethods = all.filter((m) => allowed.includes(String(m.type).toLowerCase()));
-    storedPaymentMethods = [];
+    // Saved cards are kept (Adyen returns them for this shopperReference) so they show in the top-up list.
+    if (String(env.TOPUP_CARDS || '').toLowerCase() === 'off') storedPaymentMethods = [];
   } else if (scope === 'addcard') {
     paymentMethods = all.filter((m) => m.type === 'scheme');
     storedPaymentMethods = [];
