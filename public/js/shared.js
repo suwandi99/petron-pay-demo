@@ -9,8 +9,12 @@ window.Demo = (() => {
   const KEY = 'petron_demo_v1';
   const uid = () => Math.random().toString(36).slice(2, 10);
 
+  // One stable shopper reference per browser. It is created once, saved immediately, and only
+  // changes when "Reset demo data" is used. (sessionRef keeps it stable even if storage is blocked.)
+  let sessionRef = 'petron-demo-' + uid();
+
   const defaults = () => ({
-    shopperRef: 'petron-demo-' + uid(),
+    shopperRef: sessionRef,
     name: 'Aisyah',
     wallet: 1500, // sen -> RM 15.00, deliberately low so the top-up story makes sense
     txns: [],
@@ -18,11 +22,17 @@ window.Demo = (() => {
   });
 
   const read = () => {
+    let saved = {};
     try {
-      return { ...defaults(), ...JSON.parse(localStorage.getItem(KEY) || '{}') };
+      saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
     } catch {
-      return defaults();
+      saved = {};
     }
+    const state = { ...defaults(), ...saved };
+    if (!saved.shopperRef) {
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* storage blocked: sessionRef still keeps it stable */ }
+    }
+    return state;
   };
 
   const get = () => read();
@@ -33,8 +43,12 @@ window.Demo = (() => {
     return s;
   };
   const reset = () => {
-    localStorage.removeItem(KEY);
-    localStorage.removeItem('petron_pending');
+    sessionRef = 'petron-demo-' + uid(); // a reset deliberately starts a new shopper
+    try {
+      localStorage.removeItem(KEY);
+      localStorage.removeItem('petron_pending');
+      localStorage.removeItem('petron_last_addcard');
+    } catch { /* ignore */ }
   };
 
   const rm = (minor) => 'RM ' + (minor / 100).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

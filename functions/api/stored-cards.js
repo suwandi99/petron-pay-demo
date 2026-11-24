@@ -16,7 +16,9 @@ export async function onRequestGet({ request, env }) {
   const r = await adyen(env, 'GET', `/storedPaymentMethods?${q.toString()}`);
   if (!r.ok) return json({ error: r.data.message || 'Could not load saved cards', details: r.data }, 502);
 
-  const cards = (r.data.storedPaymentMethods || [])
+  const raw = r.data.storedPaymentMethods || [];
+  const debug = { adyenCount: raw.length, types: raw.map((m) => String(m.type || m.brand || '?')) };
+  const cards = raw
     .filter((m) => m.type === 'scheme' || m.lastFour)
     .map((m) => ({
       id: m.id,
@@ -26,5 +28,5 @@ export async function onRequestGet({ request, env }) {
       expiryYear: m.expiryYear,
       holderName: m.holderName,
     }));
-  return json({ cards });
+  return json({ cards, debug });
 }

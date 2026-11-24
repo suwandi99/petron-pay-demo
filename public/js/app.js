@@ -343,7 +343,16 @@
     async after() {
       $('#add').onclick = () => go('addCard');
       $('#refresh').onclick = () => paint();
-      const renderDiag = (count) => {
+      const lastAttempt = () => {
+        try { return JSON.parse(localStorage.getItem('petron_last_addcard') || 'null'); } catch { return null; }
+      };
+      const pendingNote = () => {
+        const l = lastAttempt();
+        return l && l.resultCode === 'Authorised'
+          ? `<div class="hint">Adyen approved the card check${l.pspReference ? ' (psp ' + esc(l.pspReference) + ')' : ''} but returned no saved card for this shopper reference. See Troubleshooting below.</div>`
+          : '';
+      };
+      const renderDiag = (count, dbg) => {
         let last = null;
         try { last = JSON.parse(localStorage.getItem('petron_last_addcard') || 'null'); } catch { /* ignore */ }
         const lastTxt = last
@@ -351,7 +360,7 @@
           : 'none yet on this browser';
         $('#diag').innerHTML = `<div class="card" style="margin-top:14px"><h3>Troubleshooting</h3>
           <dl class="kv"><dt>Shopper reference</dt><dd>${esc(D.get().shopperRef)}</dd>
-          <dt>Cards found at Adyen</dt><dd>${count ?? 'could not load'}</dd>
+          <dt>Cards found at Adyen</dt><dd>${count === null ? 'could not load' : count + (dbg ? ` (Adyen returned ${dbg.adyenCount}${dbg.types?.length ? ': ' + esc(dbg.types.join(', ')) : ''})` : '')}</dd>
           <dt>Last add-card attempt</dt><dd>${esc(lastTxt)}</dd></dl>
           <div class="muted">Search the shopper reference or psp reference in Adyen Customer Area → Transactions → Payments.</div></div>`;
       };
@@ -360,11 +369,11 @@
       try {
         const cfg = await D.config();
         if (!cfg.ready) throw new Error('Adyen is not configured yet. Missing: ' + cfg.missing.join(', '));
-        const { cards } = await D.api('/api/stored-cards?shopperReference=' + encodeURIComponent(D.get().shopperRef));
-        renderDiag(cards.length);
+        const { cards, debug } = await D.api('/api/stored-cards?shopperReference=' + encodeURIComponent(D.get().shopperRef));
+        renderDiag(cards.length, debug);
         box.innerHTML = cards.length
           ? `<div class="card"><h3>Saved cards</h3>${cards.map((c) => `<div class="list-item"><div><div class="t">💳 ${esc(c.brand)} •••• ${esc(c.lastFour || '')}</div><div class="muted">${esc(c.holderName || '')} · expires ${esc(c.expiryMonth)}/${esc(c.expiryYear)}</div></div></div>`).join('')}<div class="muted" style="margin-top:8px">Tokens are stored by Adyen. Your app never sees the card number.</div></div>`
-          : '<div class="card center"><div class="big-ic">💳</div><div class="t" style="font-weight:700">No saved cards yet</div><div class="muted">Add a card to pay at the pump with a pre-authorisation.</div></div>';
+          : '<div class="card center"><div class="big-ic">💳</div><div class="t" style="font-weight:700">No saved cards yet</div><div class="muted">Add a card to pay at the pump with a pre-authorisation.</div>' + pendingNote() + '</div>';
       } catch (e) {
         box.innerHTML = banner(e.message, true);
       }
